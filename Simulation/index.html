@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f2e9">
+  <meta name="description" content="An interactive, five-minute exhibit about how the Neuro-Symbolic Concept Learner answers a question about a scene.">
+  <title>See the reasoning · NS-CL</title>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="engine.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="See the reasoning, back to top"><span class="brand-mark" aria-hidden="true">◇</span><span>SEE THE REASONING</span></a>
+      <div class="header-actions"><span class="header-note">An interactive science exhibit <span class="header-separator">/</span> NS-CL, explained</span><button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">☾ Dark mode</button></div>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="question-heading">
+        <div class="hero-kicker"><span class="kicker-line"></span> ONE SCENE · ONE QUESTION</div>
+        <h1 id="question-heading">What color is the cube <em>to the right of</em> the red sphere?</h1>
+        <p class="hero-subtitle">You can solve this. Can you show every step your mind took?</p>
+      </section>
+
+      <section class="exhibit" aria-label="Interactive scene and reasoning walkthrough">
+        <div class="scene-side">
+          <div class="scene-heading"><span class="eyebrow">01 / READ THE SCENE</span><span id="scene-status" class="scene-status">Four objects on a table</span></div>
+          <div class="scene-frame">
+            <svg id="main-scene" viewBox="0 0 1000 510" role="img" aria-labelledby="scene-title scene-description" preserveAspectRatio="xMidYMid meet">
+              <title id="scene-title">Four colored objects on a tabletop</title>
+              <desc id="scene-description">From left to right: object A, a yellow cube; object B, a red sphere; object C, a green cylinder; object D, a blue cube.</desc>
+              <defs>
+                <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#f8f5ee"/><stop offset="1" stop-color="#e8e4da"/></linearGradient>
+                <linearGradient id="table" x2="0" y2="1"><stop stop-color="#e0d8c8"/><stop offset="1" stop-color="#c9c0ae"/></linearGradient>
+                <linearGradient id="yellow-face" x2="0" y2="1"><stop stop-color="#ffe28a"/><stop offset="1" stop-color="#dcae39"/></linearGradient>
+                <linearGradient id="blue-face" x2="0" y2="1"><stop stop-color="#78a8e9"/><stop offset="1" stop-color="#3165b9"/></linearGradient>
+                <linearGradient id="purple-face" x2="0" y2="1"><stop stop-color="#c59be4"/><stop offset="1" stop-color="#7846ae"/></linearGradient>
+                <radialGradient id="red-ball" cx="32%" cy="25%" r="74%"><stop stop-color="#ffb0a0"/><stop offset=".35" stop-color="#e65d50"/><stop offset="1" stop-color="#a62e31"/></radialGradient>
+                <linearGradient id="green-side" x2="1" y2=".25"><stop stop-color="#5cae86"/><stop offset=".5" stop-color="#3d916e"/><stop offset="1" stop-color="#267357"/></linearGradient>
+                <linearGradient id="yellow-side" x2="1" y2=".2"><stop stop-color="#f1ca59"/><stop offset="1" stop-color="#bc8c2b"/></linearGradient>
+              </defs>
+              <rect width="1000" height="510" fill="url(#wall)"/>
+              <path d="M0 356 H1000 V510 H0Z" fill="url(#table)"/>
+              <path d="M0 356 H1000" stroke="#b9ae99" stroke-width="3"/>
+              <g id="spatial-guide"></g>
+              <g id="scene-objects"></g>
+            </svg>
+          </div>
+          <div class="scene-bottom"><p id="scene-text" class="scene-text">A yellow cube, a red sphere, a green cylinder, and a blue cube, from left to right.</p><span class="scene-key"><span class="key-dot key-reference"></span> reference <span class="key-dot key-candidate"></span> candidate <span class="key-dot key-excluded"></span> excluded</span></div>
+          <div class="input-path" aria-label="How the two inputs meet">
+            <div class="path-input"><span class="path-number">1</span><div><strong>Read the scene</strong><small>Objects + visual matches</small></div></div>
+            <div class="path-input"><span class="path-number">2</span><div><strong>Read the question</strong><small>Words → instructions</small></div></div>
+            <div class="path-output"><span class="path-number">3</span><div><strong>Run the instructions</strong><small>Objects + program → answer</small></div></div>
+          </div>
+        </div>
+
+        <div class="reasoning-side">
+          <div class="reasoning-heading"><span class="eyebrow">02 / READ THE QUESTION</span><span class="small-note">Select a phrase to jump to its step</span></div>
+          <div id="phrase-question" class="phrase-question" aria-label="Question phrases"></div>
+
+          <div id="guess-area" class="guess-area">
+            <div class="guess-heading">Make a guess <span>What color?</span></div>
+            <div id="guess-options" class="guess-options" role="group" aria-label="Guess the cube's color"></div>
+            <p id="guess-feedback" class="guess-feedback" aria-live="polite"></p>
+            <button id="show-how" class="button button-primary" type="button">Show me how <span aria-hidden="true">→</span></button>
+          </div>
+
+          <div id="player" class="player" hidden>
+            <div class="player-top"><span class="eyebrow">03 / RUN THE INSTRUCTIONS</span><span id="step-counter" class="step-counter"></span></div>
+            <ol id="step-list" class="step-list" aria-label="Reasoning steps"></ol>
+            <div class="active-step" aria-live="polite" aria-atomic="true">
+              <div class="active-step-index" id="active-step-index"></div>
+              <h2 id="step-title"></h2>
+              <p id="step-explanation"></p>
+              <div class="instruction-line"><span>PROGRAM INSTRUCTION</span><code id="step-instruction"></code></div>
+              <p class="model-idea"><span>THE MODEL IDEA</span><span id="model-idea-text"></span></p>
+              <div id="score-area" class="score-area" hidden>
+                <p>A higher score means an object looks more like the concept the model is looking for. <strong>Scores are illustrative.</strong></p>
+                <button id="score-toggle" class="text-button" type="button" aria-expanded="false">Show all simulated scores</button>
+                <div id="score-details" class="score-details" hidden></div>
+              </div>
+              <div id="answer-reveal" class="answer-reveal" hidden></div>
+              <a id="algorithm-jump" class="algorithm-jump" href="#algorithm" hidden>See the algorithm behind the puzzle ↓</a>
+            </div>
+            <div class="player-controls"><button id="back-button" class="button button-secondary" type="button">← Back</button><button id="next-button" class="button button-primary" type="button">Next →</button><button id="replay-button" class="text-button" type="button">↺ Replay</button></div>
+            <details class="program-panel"><summary>See the program <span>Readable pseudocode</span></summary><pre id="full-program"></pre></details>
+          </div>
+        </div>
+      </section>
+
+      <section id="algorithm" class="algorithm-section" aria-labelledby="algorithm-heading">
+        <div class="algorithm-intro"><span class="eyebrow">BEHIND THE FIVE STEPS</span><h2 id="algorithm-heading">What the puzzle stands for.</h2><p><strong>Visual question answering</strong> means answering a question about an image. NS-CL does this by turning the image into object information and the sentence into instructions, then running those instructions. Explore either input or their meeting point.</p><p class="name-explainer"><strong>Why “neuro-symbolic”?</strong> Neural parts learn visual concepts and how words map to operations. Symbolic operations make the reasoning chain inspectable. The executor is <em>quasi-symbolic</em> because it passes soft strengths between those explicit steps.</p></div>
+        <div id="algorithm-flow" class="algorithm-flow" role="group" aria-label="Parts of the NS-CL algorithm">
+          <button class="flow-stage active" type="button" data-topic="scene" aria-pressed="true"><span>IMAGE INPUT</span><strong>Read the scene</strong><small>Visual perception</small></button>
+          <span class="flow-symbol" aria-hidden="true">+</span>
+          <button class="flow-stage" type="button" data-topic="question" aria-pressed="false"><span>QUESTION INPUT</span><strong>Read the question</strong><small>Semantic parsing</small></button>
+          <span class="flow-symbol" aria-hidden="true">→</span>
+          <button class="flow-stage" type="button" data-topic="executor" aria-pressed="false"><span>MEETING POINT</span><strong>Run the instructions</strong><small>Quasi-symbolic executor</small></button>
+        </div>
+        <div id="concept-details" class="concept-details" role="region" aria-label="Algorithm concept explanation"></div>
+        <div class="algorithm-learning"><div><span class="eyebrow">HOW THE TWO PARTS LEARN</span><h3>The training answer is the teacher.</h3></div><p>Each training example pairs an image and question with a known answer. The system compares its prediction with that answer. This feedback helps the visual concepts and question parser improve across many examples, without being told the correct concepts or program for each one. The object detector is separately pretrained. The paper uses a <strong>curriculum</strong>: simple object properties first, then relations, then longer questions.</p></div>
+        <p class="simulation-note">This browser exhibit uses authored objects, supported question templates, and simulated scores. Its hard selections make the algorithm easy to follow; the paper’s executor carries soft strengths for objects between operations.</p>
+      </section>
+
+      <section id="experiments" class="experiments" aria-labelledby="experiment-heading">
+        <div class="section-intro"><span class="eyebrow">TRY IT YOURSELF</span><h2 id="experiment-heading">Change one thing.</h2><p>Make a prediction. Then replay the same instructions on your edited puzzle.</p></div>
+        <div class="experiment-grid">
+          <fieldset class="experiment-control"><legend>1 · Change the question</legend><p>Which side of the red sphere?</p><div class="segmented" id="direction-controls"><label><input type="radio" name="direction" value="right" checked><span>Right</span></label><label><input type="radio" name="direction" value="left"><span>Left</span></label></div></fieldset>
+          <fieldset class="experiment-control"><legend>2 · Change the scene</legend><p>What color is object D?</p><div class="segmented" id="color-controls"><label><input type="radio" name="target-color" value="blue" checked><span>Blue</span></label><label><input type="radio" name="target-color" value="purple"><span>Purple</span></label></div></fieldset>
+        </div>
+        <div class="challenge"><div><span class="eyebrow">TRANSFER CHALLENGE</span><h3>How many cubes are to the <span id="challenge-direction">right</span> of the red sphere?</h3><p>The last instruction changes from reading a color to counting.</p></div><button id="count-toggle" class="button button-secondary" type="button" aria-pressed="false">Try the count question</button></div>
+        <div id="prediction-area" class="prediction-area" hidden><span id="prediction-label">Predict the answer before you replay:</span><div id="prediction-options" class="prediction-options" role="group" aria-labelledby="prediction-label"></div><p id="prediction-feedback" aria-live="polite"></p><button id="run-edited" class="button button-primary" type="button">Replay with this change →</button></div>
+        <button id="restore-button" class="restore-button" type="button">↺ Restore original puzzle</button>
+      </section>
+
+      <section class="learning-section" aria-labelledby="learning-heading">
+        <button id="learning-toggle" class="learning-opener" type="button" aria-expanded="false" aria-controls="learning-panel"><span><span class="eyebrow">OPTIONAL · HOW IT LEARNS</span><strong id="learning-heading">How did it learn what “red” means?</strong></span><span class="opener-arrow" aria-hidden="true">↗</span></button>
+        <div id="learning-panel" class="learning-panel" hidden>
+          <p class="learning-lead">During training, an image and a question come with a known answer. The system makes a prediction; comparing the two gives feedback across many examples.</p>
+          <div class="learning-example"><div><span>IMAGE</span><strong>Our four-object tabletop</strong></div><div><span>QUESTION</span><strong>What color is the cube right of the red sphere?</strong></div><div><span>KNOWN ANSWER</span><strong>Blue</strong></div><div><span>SYSTEM PREDICTION</span><strong>Blue</strong></div></div>
+          <h3>One correct answer can hide a shortcut.</h3><p>In the opening scene, both instructions below answer blue. Add one object and compare them again.</p>
+          <div class="shortcut-demo"><div class="shortcut-scene-wrap"><svg id="learning-scene" viewBox="0 0 1000 510" role="img" aria-label="Learning example tabletop scene"></svg><button id="add-decoy" class="button button-secondary" type="button" aria-pressed="false">Add yellow cylinder at far right</button></div><div class="shortcut-results"><div><span>INTENDED PROGRAM</span><p>Find the cube right of the red sphere → read its color</p><strong id="intended-result">Blue</strong></div><div><span>SHORTCUT</span><p>Read the rightmost object's color</p><strong id="shortcut-result">Blue</strong></div></div></div>
+          <p id="shortcut-insight" class="insight">Both agree here. One answer alone does not show which path the system used.</p>
+          <details class="paper-note"><summary>Paper-specific training details</summary><p>The paper uses question–answer supervision to learn visual concepts and programs. Object proposals come from a separately pretrained detector. Reasoning uses a predefined set of operations, and training follows a staged curriculum from simpler to more complex questions. This browser exhibit is an educational simulation: its scenes and question templates are authored, and its match scores are illustrative.</p><p><a href="https://nscl.csail.mit.edu/data/papers/2019ICLR-NSCL.pdf" target="_blank" rel="noopener">Read the paper by Mao et al. (ICLR 2019) ↗</a></p></details>
+          <button id="return-button" class="text-button" type="button">← Return to the puzzle</button>
+        </div>
+      </section>
+    </main>
+    <footer><span>Inspired by Mao et al., <em>The Neuro-Symbolic Concept Learner</em> (ICLR 2019).</span><a href="https://nscl.csail.mit.edu/" target="_blank" rel="noopener">Paper and project ↗</a></footer>
+  </div>
+  <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
